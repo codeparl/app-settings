@@ -1,0 +1,106 @@
+{
+    "name": "schoolpalm/app-settings",
+    "description": "A lightweight settings abstraction package providing a consistent API for reading and writing application settings without exposing how or where those settings are stored.",
+    "type": "library",
+    "license": "MIT",
+    "version": "1.0.0",
+    "keywords": [
+        "laravel",
+        "settings",
+        "app-settings",
+        "schoolpalm",
+        "configuration",
+        "settings-manager",
+        "laravel-package",
+        "abstraction",
+        "storage-agnostic"
+    ],
+    "authors": [
+        {
+            "name": "Mugabo Hassan",
+            "email": "dybarox@gmail.com",
+            "homepage": "https://schoolpalm.com",
+            "role": "Developer"
+        }
+    ],
+    "support": {
+        "email": "support@schoolpalm.com",
+        "issues": "https://github.com/schoolpalm/app-settings/issues",
+        "source": "https://github.com/schoolpalm/app-settings"
+    },
+    "funding": [
+        {
+            "type": "other",
+            "url": "https://schoolpalm.com"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "illuminate/support": "^12.0",
+        "schoolpalm/cache-store": "*"
+    },
+    "require-dev": {
+        "laravel/pint": "^1.13",
+        "orchestra/testbench": "^9.0|^10.0",
+        "phpunit/phpunit": "^11.0",
+        "mockery/mockery": "^1.6",
+        "pestphp/pest": "^3.8",
+        "pestphp/pest-plugin-laravel": "^3.2"
+    },
+    "suggest": {
+        "schoolpalm/cache-store": "Recommended for high-performance cached settings with multi-tenant and multi-school support."
+    },
+    "autoload": {
+        "psr-4": {
+            "SchoolPalm\\AppSettings\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "SchoolPalm\\AppSettings\\Tests\\": "tests/",
+            "Workbench\\App\\": "workbench/app/",
+            "Workbench\\Database\\Factories\\": "workbench/database/factories/",
+            "Workbench\\Database\\Seeders\\": "workbench/database/seeders/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "SchoolPalm\\AppSettings\\Providers\\AppSettingsServiceProvider"
+            ],
+            "aliases": {
+                "AppSettings": "SchoolPalm\\AppSettings\\Facades\\AppSettings"
+            }
+        }
+    },
+    "scripts": {
+        "post-autoload-dump": [
+            "@clear",
+            "@prepare"
+        ],
+        "clear": "@php vendor/bin/testbench package:purge-skeleton --ansi",
+        "prepare": "@php vendor/bin/testbench package:discover --ansi",
+        "build": "@php vendor/bin/testbench workbench:build --ansi",
+        "serve": [
+            "Composer\\Config::disableProcessTimeout",
+            "@build",
+            "@php vendor/bin/testbench serve --ansi"
+        ],
+        "test": [
+            "@clear",
+            "@php vendor/bin/pest"
+        ],
+        "lint": [
+            "@php vendor/bin/pint --ansi"
+        ]
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        },
+        "sort-packages": true,
+        "optimize-autoloader": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

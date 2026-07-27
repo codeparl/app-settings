@@ -1,0 +1,14 @@
+/vendor/
+/node_modules/
+/.phpunit.result.cache
+/.php_cs.cache
+/.php_cs
+/composer.lock
+/.DS_Store
+Thumbs.db
+*.log
+.env
+.phpunit.cache/
+.php-cs-fixer.cache
+workbench
+
