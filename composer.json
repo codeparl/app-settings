@@ -1,24 +1,23 @@
 {
     "name": "schoolpalm/app-settings",
-    "description": "A lightweight settings abstraction package providing a consistent API for reading and writing application settings without exposing how or where those settings are stored.",
+    "description": "A Laravel settings management package providing multi-tenant and context-aware configuration storage using CacheStore.",
     "type": "library",
     "license": "MIT",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "keywords": [
         "laravel",
         "settings",
         "app-settings",
         "schoolpalm",
-        "configuration",
-        "settings-manager",
-        "laravel-package",
-        "abstraction",
-        "storage-agnostic"
+        "multi-tenant",
+        "tenant-context",
+        "school-context",
+        "laravel-package"
     ],
     "authors": [
         {
             "name": "Mugabo Hassan",
-            "email": "dybarox@gmail.com",
+            "email": "cybarox@gmail.com",
             "homepage": "https://schoolpalm.com",
             "role": "Developer"
         }
@@ -37,18 +36,15 @@
     "require": {
         "php": "^8.2",
         "illuminate/support": "^12.0",
-        "schoolpalm/cache-store": "*"
+        "schoolpalm/cache-store": "^1.0"
     },
     "require-dev": {
         "laravel/pint": "^1.13",
-        "orchestra/testbench": "^9.0|^10.0",
-        "phpunit/phpunit": "^11.0",
         "mockery/mockery": "^1.6",
+        "orchestra/testbench": "^9.0|^10.0",
         "pestphp/pest": "^3.8",
-        "pestphp/pest-plugin-laravel": "^3.2"
-    },
-    "suggest": {
-        "schoolpalm/cache-store": "Recommended for high-performance cached settings with multi-tenant and multi-school support."
+        "pestphp/pest-plugin-laravel": "^3.2",
+        "phpunit/phpunit": "^11.0"
     },
     "autoload": {
         "psr-4": {
@@ -98,8 +94,8 @@
         "allow-plugins": {
             "pestphp/pest-plugin": true
         },
-        "sort-packages": true,
-        "optimize-autoloader": true
+        "optimize-autoloader": true,
+        "sort-packages": true
     },
     "minimum-stability": "stable",
     "prefer-stable": true
