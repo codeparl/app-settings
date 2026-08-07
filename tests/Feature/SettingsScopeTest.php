@@ -184,6 +184,22 @@ it('prevents group configuration bleed when setting complex arrays', function ()
         ->toBe($whatsappConfig);
 });
 
+it('supports settings under specific groups', function () {
+    // 1. Store settings under distinct groups
+    AppSettings::group('report_cards')->put('template', 'modern_v2');
+    AppSettings::group('sms_gateway')->put('provider', 'twilio');
+
+    // 2. Assert group isolation
+    expect(AppSettings::group('report_cards')->get('template'))
+        ->toBe('modern_v2');
+
+    expect(AppSettings::group('sms_gateway')->get('provider'))
+        ->toBe('twilio');
+
+    // Key without group context should not exist
+    expect(AppSettings::has('template'))->toBeFalse();
+});
+
 it('persists group scope correctly in database settings table', function () {
     AppSettings::context('school', 10)
         ->group('grading')

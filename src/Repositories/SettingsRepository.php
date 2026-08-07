@@ -61,7 +61,7 @@ class SettingsRepository
             ->where('key', $key)
             ->first();
 
-        //    dd($setting);
+
 
         if (!$setting) {
 
@@ -321,12 +321,20 @@ class SettingsRepository
 
         /**
          * Apply settings group.
+         *
+         * If no group exists,
+         * explicitly query ungrouped settings.
          */
         if ($scope->group()) {
 
             $query->where(
                 'group',
                 $scope->group()
+            );
+        } else {
+
+            $query->whereNull(
+                'group'
             );
         }
 
