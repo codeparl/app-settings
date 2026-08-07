@@ -40,7 +40,7 @@ class SettingsResolver
 
         return $this->cache($scope)
             ->remember(
-                $key,
+                $this->cacheKey($scope, $key),
                 config('app-settings.cache.ttl'),
                 function () use (
                     $scope,
@@ -75,7 +75,7 @@ class SettingsResolver
 
         $this->cache($scope)
             ->put(
-                $key,
+                $this->cacheKey($scope, $key),
                 $value,
                 config('app-settings.cache.ttl')
             );
@@ -96,7 +96,9 @@ class SettingsResolver
 
 
         $this->cache($scope)
-            ->forget($key);
+            ->forget(
+                $this->cacheKey($scope, $key)
+            );
     }
 
 
@@ -142,20 +144,41 @@ class SettingsResolver
 
     /**
      * Remove all settings in current scope.
+     *
+     * Clears both the database and the cache for the
+     * given scope (context and group).
+     *
+     * The database is flushed first, then each cached
+     * key belonging to the scope is forgotten using the
+     * group-aware cache key so stale values do not bleed
+     * into subsequent reads.
      */
     public function flush(
         SettingsScope $scope
     ): void {
 
+        /*
+         * Capture the keys before deleting from storage
+         * so they can be used to invalidate the cache.
+         */
+        $keys = array_keys(
+            $this->repository->all($scope)
+        );
+
+
         $this->repository->flush(
             $scope
         );
 
-        /*
-         * Cache invalidation of a complete scope
-         * will be handled when cache-store supports
-         * context flushing.
-         */
+
+        $cache = $this->cache($scope);
+
+        foreach ($keys as $key) {
+
+            $cache->forget(
+                $this->cacheKey($scope, $key)
+            );
+        }
     }
 
 
@@ -210,5 +233,39 @@ class SettingsResolver
          * Global settings.
          */
         return CacheStore::getFacadeRoot();
+    }
+
+
+
+
+    /**
+     * Build a group-aware cache key.
+     *
+     * The cache-store key builder only incorporates tenant and
+     * school contexts. To prevent group bleed within the same
+     * context, the group is prefixed onto the base key.
+     *
+     * Example:
+     *
+     * email:provider
+     * sms:provider
+     *
+     * @param SettingsScope $scope
+     * @param string $key
+     *
+     * @return string
+     */
+    protected function cacheKey(
+        SettingsScope $scope,
+        string $key
+    ): string {
+
+        if ($scope->hasGroup()) {
+
+            return $scope->group() . ':' . $key;
+        }
+
+
+        return $key;
     }
 }

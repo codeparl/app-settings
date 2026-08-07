@@ -11,4 +11,5 @@ Thumbs.db
 .phpunit.cache/
 .php-cs-fixer.cache
 workbench
+/TODO.md
 

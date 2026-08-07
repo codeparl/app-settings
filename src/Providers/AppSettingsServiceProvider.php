@@ -123,6 +123,9 @@ final class AppSettingsServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        $this->loadMigrationsFrom(
+            __DIR__ . '/../../database/migrations'
+        );
 
         /*
         |--------------------------------------------------------------------------

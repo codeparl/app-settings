@@ -277,7 +277,7 @@ if (AppSettings::has('school.name')) {
 // Delete a setting
 AppSettings::forget('school.name');
 
-// Delete all settings
+// Delete all settings (DB + cache) in the current scope
 AppSettings::flush();
 
 // Get all settings
@@ -351,9 +351,26 @@ $settings = AppSettings::all();
 
 ### Delete All Settings (`flush`)
 
+`flush()` removes **all settings in the current scope** from **both the database and the cache**, preventing stale cached values from bleeding into subsequent reads.
+
 ```php
-AppSettings::flush(); // Removes ALL settings in the current scope
+// Clears ALL global settings (DB + cache)
+AppSettings::flush();
+
+// Clears all settings for a context (DB + cache)
+AppSettings::context('school', 1)->flush();
+
+// Clears all settings for a group within a context (DB + cache)
+AppSettings::context('school', 1)
+    ->group('grading')
+    ->flush();
 ```
+
+`flush()` is scope-aware:
+
+- `AppSettings::flush()` — clears the global (context-less) scope
+- `AppSettings::context('school', 1)->flush()` — clears **only** school 1; other schools are untouched
+- `AppSettings::context('school', 1)->group('grading')->flush()` — clears **only** the `grading` group of school 1; other groups are untouched
 
 ---
 
@@ -628,6 +645,7 @@ The package implements a **cache-first** resolution strategy through `SettingsRe
 1. **Read:** Try cache first → if miss, read from DB → store in cache
 2. **Write:** Write to DB first → refresh cache
 3. **Delete:** Delete from DB → remove from cache
+4. **Flush:** Delete all settings in scope from DB → forget each cached key for that scope
 
 ### Cache Context
 

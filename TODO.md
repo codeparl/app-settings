@@ -1,36 +1,17 @@
-# SchoolPalm App Settings - Implementation Progress
+# TODO - Fix Group Isolation & Cache Key Generation Bug + Docs + Flush Enhancement
 
-## ✅ Phase 1: Foundation Files
-- [x] composer.json
-- [x] .gitignore
-- [x] .editorconfig
-- [x] .gitattributes
-- [x] LICENSE
-- [x] CHANGELOG.md
-- [x] CONTRIBUTING.md
-- [x] SECURITY.md
+## Bug Fix Steps
+- [x] Add `cacheKey()` helper in `SettingsResolver` to incorporate `$scope->group()` into cache keys
+- [x] Update `get()`, `put()`, and `forget()` to use `cacheKey()`
+- [x] Run the test suite (`vendor/bin/pest`) to confirm all tests pass
 
-## ✅ Phase 2: Source Code
-- [x] src/Contracts/SettingsService.php
-- [x] src/Exceptions/SettingsException.php
-- [x] src/Fluent/SettingsQueryBuilder.php
-- [x] src/Managers/SettingsManager.php
-- [x] src/Facades/AppSettings.php
-- [x] src/Providers/AppSettingsServiceProvider.php
-- [x] config/app-settings.php
+## Documentation Steps
+- [x] Verify readme accuracy against actual source code
+- [x] Write full documentation on how to use the package and its APIs
+- [x] Document the group cache isolation behavior and cache key generation format
 
-## ✅ Phase 3: Test Infrastructure
-- [x] tests/TestCase.php
-- [x] tests/Pest.php
-- [x] phpunit.xml
-- [x] testbench.yaml
-
-## ✅ Phase 4: Tests
-- [x] tests/Unit/SettingsManagerTest.php
-- [x] tests/Unit/SettingsQueryBuilderTest.php
-- [x] tests/Feature/AppSettingsTest.php
-
-## ✅ Phase 5: CI & Documentation
-- [x] .github/workflows/run-tests.yml
-- [x] README.md (enhanced)
-
+## Flush Enhancement Steps
+- [x] Update `SettingsResolver::flush()` to clear both database AND cache for the given scope
+- [x] Add tests verifying flush clears cache+DB for a context, only affects targeted context, and only affects targeted group
+- [x] Run the full test suite to confirm all tests pass
+- [x] Update `docs/usage.md` and `readme.md` to document the cache-aware flush behavior
