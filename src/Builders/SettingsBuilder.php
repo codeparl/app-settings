@@ -149,6 +149,32 @@ class SettingsBuilder
     }
 
 
+    /**
+     * Helper to retrieve a setting key or scoped group path directly.
+     *
+     * Examples:
+     * $builder->settings('message_delivery.email.laravel-mail.enabled')
+     * $builder->settings('message_delivery.email.laravel-mail.enabled', true)
+     *
+     * Proxies to:
+     * $builder->group('message_delivery.email.laravel-mail.enabled')->get(default: $default)
+     */
+    public function settings(?string $path = null, mixed $default = null): mixed
+    {
+        if ($path === null || $path === '') {
+            return $this->get(null, $default);
+        }
+
+        return $this->group($path)->get(null, $default);
+    }
+
+    /**
+     * Alias for settings() to support singular/plural method call styles.
+     */
+    public function setting(?string $path = null, mixed $default = null): mixed
+    {
+        return $this->settings($path, $default);
+    }
 
     /**
      * Store setting value.

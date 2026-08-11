@@ -1,16 +1,11 @@
 # SchoolPalm App Settings
 
-<p align="center">
-    <a href="https://packagist.org/packages/schoolpalm/app-settings"><img src="https://img.shields.io/packagist/v/schoolpalm/app-settings.svg?style=flat-square" alt="Latest Version on Packagist"></a>
-    <a href="https://github.com/schoolpalm/app-settings/actions"><img src="https://img.shields.io/github/actions/workflow/status/schoolpalm/app-settings/run-tests.yml?branch=main&style=flat-square&label=tests" alt="GitHub Tests"></a>
-    <a href="https://packagist.org/packages/schoolpalm/app-settings"><img src="https://img.shields.io/packagist/dt/schoolpalm/app-settings.svg?style=flat-square" alt="Total Downloads"></a>
-    <a href="https://packagist.org/packages/schoolpalm/app-settings"><img src="https://img.shields.io/packagist/l/schoolpalm/app-settings.svg?style=flat-square" alt="License"></a>
-    <a href="https://php.net"><img src="https://img.shields.io/packagist/php-v/schoolpalm/app-settings.svg?style=flat-square" alt="PHP Version"></a>
-</p>
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/schoolpalm/app-settings.svg?style=flat-square)](https://packagist.org/packages/schoolpalm/app-settings) [![GitHub Tests](https://img.shields.io/github/actions/workflow/status/schoolpalm/app-settings/run-tests.yml?branch=main&style=flat-square&label=tests)](https://github.com/schoolpalm/app-settings/actions) [![Total Downloads](https://img.shields.io/packagist/dt/schoolpalm/app-settings.svg?style=flat-square)](https://packagist.org/packages/schoolpalm/app-settings) [![License](https://img.shields.io/packagist/l/schoolpalm/app-settings.svg?style=flat-square)](https://packagist.org/packages/schoolpalm/app-settings) [![PHP Version](https://img.shields.io/packagist/php-v/schoolpalm/app-settings.svg?style=flat-square)](https://php.net)
 
 A lightweight, storage-agnostic settings abstraction package for Laravel that provides a consistent, expressive API for reading and writing application settings — without exposing how or where those settings are stored.
 
 **The package does not know anything about:**
+
 - Database engines
 - Eloquent Models
 - Tenants or Schools
@@ -19,7 +14,7 @@ A lightweight, storage-agnostic settings abstraction package for Laravel that pr
 
 Instead, the package delegates all persistence responsibilities to a layered architecture: **Facade → Manager → Builder → Resolver → Repository**.
 
----
+* * *
 
 ## Table of Contents
 
@@ -28,6 +23,7 @@ Instead, the package delegates all persistence responsibilities to a layered arc
 - [Architecture](#architecture)
 - [Quick Start](#quick-start)
 - [Basic CRUD Operations](#basic-crud-operations)
+- [Dot-Notation Path Shorthand (settings/setting)](#dot-notation-shorthand)
 - [Fluent Builder API](#fluent-builder-api)
 - [Settings Scope](#settings-scope)
 - [Context Isolation](#context-isolation)
@@ -42,13 +38,13 @@ Instead, the package delegates all persistence responsibilities to a layered arc
 - [Complete API Reference](#complete-api-reference)
 - [Design Philosophy](#design-philosophy)
 
----
+* * *
 
 ## Installation
 
 ### Install via Composer
 
-```bash
+```
 composer require schoolpalm/app-settings
 ```
 
@@ -63,7 +59,7 @@ The `AppSettings` facade is available globally after installation.
 
 ### Publishing Configuration
 
-```bash
+```
 php artisan vendor:publish --tag=app-settings-config
 ```
 
@@ -71,7 +67,7 @@ This publishes the configuration file to `config/app-settings.php`.
 
 ### Publishing Migrations
 
-```bash
+```
 # Publish main migration (standard applications)
 php artisan vendor:publish --tag=app-settings-migrations
 
@@ -81,7 +77,7 @@ php artisan vendor:publish --tag=app-settings-tenant-migrations
 
 Run migrations after publishing:
 
-```bash
+```
 php artisan migrate
 ```
 
@@ -89,19 +85,19 @@ php artisan migrate
 
 For high-performance cached settings with multi-tenant and multi-school support:
 
-```bash
+```
 composer require schoolpalm/cache-store
 ```
 
 This enables cache-first resolution while keeping the **app-settings** package completely decoupled from caching logic.
 
----
+* * *
 
 ## Configuration
 
 Publish the configuration file and customize it:
 
-```php
+```
 <?php
 
 return [
@@ -201,7 +197,7 @@ return [
 ];
 ```
 
----
+* * *
 
 ## Architecture
 
@@ -214,20 +210,20 @@ return [
             AppSettings Facade
                      │
                      ▼
-           SettingsManager
+              SettingsManager
                      │
                      ▼
-           SettingsBuilder
+              SettingsBuilder
                      │
                      ▼
-           SettingsResolver
+             SettingsResolver
                      │
              ┌───────┴───────┐
              ▼               ▼
-   SettingsRepository    CacheStore
+    SettingsRepository    CacheStore
              │               │
              ▼               ▼
-         Database         Redis / Cache
+          Database        Redis / Cache
 ```
 
 ### Layer Responsibilities
@@ -244,6 +240,7 @@ return [
 ### Key Design Principle
 
 The package only communicates with the **database** through `SettingsRepository`. It never directly knows about:
+
 - Which database engine is used
 - How caching is implemented
 - What tenant/school resolution strategy the application uses
@@ -251,11 +248,11 @@ The package only communicates with the **database** through `SettingsRepository`
 
 This keeps the package reusable, testable, and completely decoupled from application infrastructure.
 
----
+* * *
 
 ## Quick Start
 
-```php
+```
 use SchoolPalm\AppSettings\Facades\AppSettings;
 
 // Store a setting
@@ -264,6 +261,9 @@ AppSettings::put('school.name', 'Emma High School');
 // Retrieve a setting
 $name = AppSettings::get('school.name');
 // Result: 'Emma High School'
+
+// Retrieve directly via nested dot-notation path shorthand
+$enabled = AppSettings::settings('message_delivery.email.laravel-mail.enabled');
 
 // Retrieve with a default value
 $motto = AppSettings::get('school.motto', 'Excellence');
@@ -284,13 +284,13 @@ AppSettings::flush();
 $allSettings = AppSettings::all();
 ```
 
----
+* * *
 
 ## Basic CRUD Operations
 
 ### Store a Setting (`put`)
 
-```php
+```
 AppSettings::put('school.name', 'Emma High School');
 AppSettings::put('school.enrollment', 1200);
 AppSettings::put('school.is_active', true);
@@ -299,7 +299,7 @@ AppSettings::put('school.subjects', ['Math', 'Science', 'English']);
 
 The `put()` method returns `$this` for chaining:
 
-```php
+```
 AppSettings::put('school.name', 'Emma High')
     ->put('school.email', 'info@emma.sc.ug')
     ->put('school.phone', '+256700000000');
@@ -307,7 +307,7 @@ AppSettings::put('school.name', 'Emma High')
 
 ### Retrieve a Setting (`get`)
 
-```php
+```
 // Simple retrieval
 $name = AppSettings::get('school.name');
 
@@ -321,7 +321,7 @@ $isActive   = AppSettings::get('school.is_active');  // (bool) true
 
 ### Check if Setting Exists (`has`)
 
-```php
+```
 if (AppSettings::has('school.name')) {
     // The setting exists in storage
 }
@@ -331,20 +331,20 @@ if (AppSettings::has('school.name')) {
 
 ### Delete a Setting (`forget`)
 
-```php
+```
 AppSettings::forget('school.logo');
 ```
 
 Returns `$this` for chaining:
 
-```php
+```
 AppSettings::forget('school.logo')
     ->forget('school.banner');
 ```
 
 ### Retrieve All Settings (`all`)
 
-```php
+```
 $settings = AppSettings::all();
 // Returns: ['school.name' => 'Emma High', 'school.enrollment' => 1200, ...]
 ```
@@ -353,7 +353,7 @@ $settings = AppSettings::all();
 
 `flush()` removes **all settings in the current scope** from **both the database and the cache**, preventing stale cached values from bleeding into subsequent reads.
 
-```php
+```
 // Clears ALL global settings (DB + cache)
 AppSettings::flush();
 
@@ -372,7 +372,36 @@ AppSettings::context('school', 1)
 - `AppSettings::context('school', 1)->flush()` — clears **only** school 1; other schools are untouched
 - `AppSettings::context('school', 1)->group('grading')->flush()` — clears **only** the `grading` group of school 1; other groups are untouched
 
----
+* * *
+
+## Dot-Notation Path Shorthand (settings / setting)
+
+Instead of explicitly setting group scope and executing a parameterless `get()`, both `SettingsAdapter` and `SettingsBuilder` provide direct shorthand reading methods: `settings()` and its alias `setting()`.
+
+### Traditional Group Retrieval
+
+```
+$enabled = AppSettings::group('message_delivery.email.laravel-mail.enabled')->get();
+```
+
+### Shorthand Retrieval
+
+```
+// Using settings()
+$enabled = AppSettings::settings('message_delivery.email.laravel-mail.enabled');
+
+// Using singular setting() alias with fallback default
+$enabled = AppSettings::setting('message_delivery.email.laravel-mail.enabled', true);
+```
+
+### Method Signatures
+
+```
+public function settings(?string $path = null, mixed $default = null): mixed;
+public function setting(?string $path = null, mixed $default = null): mixed;
+```
+
+* * *
 
 ## Fluent Builder API
 
@@ -380,7 +409,7 @@ The package provides a fluent builder for more complex operations. The builder m
 
 ### Connection → Context → Group → Action
 
-```php
+```
 AppSettings::connection('tenant')
     ->context('school', 10)
     ->group('report_cards')
@@ -390,11 +419,16 @@ $value = AppSettings::connection('tenant')
     ->context('school', 10)
     ->group('report_cards')
     ->get('show_photo');
+
+// Or using shorthand path reading directly off context
+$value = AppSettings::connection('tenant')
+    ->context('school', 10)
+    ->setting('report_cards.show_photo');
 ```
 
 ### Using `SettingsBuilder` Directly via `withScope`
 
-```php
+```
 use SchoolPalm\AppSettings\Support\SettingsScope;
 
 $scope = new SettingsScope(
@@ -412,7 +446,7 @@ $value = $builder->get('show_photo');
 
 The `SettingsManager` itself returns `$this` from mutating methods:
 
-```php
+```
 AppSettings::put('theme.color', 'blue')
     ->put('theme.font', 'Arial')
     ->put('theme.size', 14);
@@ -421,7 +455,7 @@ AppSettings::forget('theme.color')
     ->forget('theme.font');
 ```
 
----
+* * *
 
 ## Settings Scope
 
@@ -434,12 +468,12 @@ AppSettings::forget('theme.color')
 | `connection`   | `string | null`       | Database connection name                     |
 | `contextType`  | `string | null`       | Context namespace (e.g., 'school', 'branch') |
 | `contextId`    | `string | int         | null`                                        | Context identifier (e.g., school ID) |
-| `group`        | `string | null`       | Settings group (e.g., 'report_cards')        |
+| `group`        | `string | null`       | Settings group (e.g., 'report\_cards')       |
 | `cacheContext` | `mixed  | null`       | Cache isolation context                      |
 
 ### Creating a Scope
 
-```php
+```
 use SchoolPalm\AppSettings\Support\SettingsScope;
 
 // Global scope (no isolation)
@@ -464,7 +498,7 @@ $scoped = new SettingsScope(
 
 Each modifier returns a **new** instance:
 
-```php
+```
 $scope = new SettingsScope();
 
 $tenantScope = $scope->withConnection('tenant');
@@ -477,17 +511,17 @@ $cachedScope = $groupScope->withCacheContext(['tenant_abc', 'school_123']);
 
 ### Helper Methods
 
-```php
+```
 $scope->connection();     // Get connection name
-$scope->contextType();     // Get context type
-$scope->contextId();       // Get context ID
-$scope->group();           // Get group name
-$scope->hasContext();      // Whether scope has a context
-$scope->hasGroup();        // Whether scope belongs to a group
-$scope->toArray();         // Convert scope to array (useful for debugging)
+$scope->contextType();    // Get context type
+$scope->contextId();      // Get context ID
+$scope->group();          // Get group name
+$scope->hasContext();     // Whether scope has a context
+$scope->hasGroup();       // Whether scope belongs to a group
+$scope->toArray();        // Convert scope to array (useful for debugging)
 ```
 
----
+* * *
 
 ## Context Isolation
 
@@ -499,7 +533,7 @@ Without context, all settings are **global**. Contexts enable **multi-tenant** o
 
 ### Using Contexts
 
-```php
+```
 // Store settings for different schools
 AppSettings::context('school', 1)->put('name', 'School One');
 AppSettings::context('school', 2)->put('name', 'School Two');
@@ -513,37 +547,37 @@ $school2Name = AppSettings::context('school', 2)->get('name'); // 'School Two'
 
 When a context is applied, the package queries the database with:
 
-```sql
+```
 WHERE context_type = 'school'
   AND context_id = 10
 ```
 
 Without context:
 
-```sql
+```
 WHERE context_type IS NULL
   AND context_id IS NULL
 ```
 
 ### Database Structure
 
-| context_type | context_id | group        | key        | value    |
-| ------------ | ---------- | ------------ | ---------- | -------- |
-| NULL         | NULL       | NULL         | app.name   | "My App" |
-| school       | 1          | report_cards | show_photo | true     |
-| school       | 2          | report_cards | show_photo | false    |
+| context\_type | context\_id | group         | key         | value    |
+| ------------- | ----------- | ------------- | ----------- | -------- |
+| NULL          | NULL        | NULL          | app.name    | "My App" |
+| school        | 1           | report\_cards | show\_photo | true     |
+| school        | 2           | report\_cards | show\_photo | false    |
 
 ### Custom Context Types
 
 You can use any context type that fits your application:
 
-```php
+```
 AppSettings::context('branch', 5)->put('currency', 'UGX');
 AppSettings::context('user', 42)->put('theme', 'dark');
 AppSettings::context('department', 'engineering')->put('lead', 'John');
 ```
 
----
+* * *
 
 ## Settings Groups
 
@@ -551,7 +585,7 @@ Groups provide a way to organize related settings together.
 
 ### Using Groups
 
-```php
+```
 // Store grouped settings
 AppSettings::group('report_cards')
     ->put('show_photo', true);
@@ -572,7 +606,7 @@ $reportCardSettings = AppSettings::group('report_cards')->all();
 
 Groups and contexts compose naturally:
 
-```php
+```
 // School-specific report card settings
 AppSettings::context('school', 10)
     ->group('report_cards')
@@ -593,7 +627,7 @@ AppSettings::context('school', 10)
 - `theme` — Application theming
 - `notifications` — Notification preferences
 
----
+* * *
 
 ## Database Connections
 
@@ -601,7 +635,7 @@ The package supports dynamic database connections, enabling **tenant isolation**
 
 ### Using Connections
 
-```php
+```
 // Store on the default connection
 AppSettings::put('app.name', 'My App');
 
@@ -616,7 +650,7 @@ $name = AppSettings::connection('tenant_abc')
 
 ### Connections with Contexts and Groups
 
-```php
+```
 AppSettings::connection('tenant_abc')
     ->context('school', 10)
     ->group('report_cards')
@@ -627,14 +661,14 @@ AppSettings::connection('tenant_abc')
 
 The connection is passed to the Eloquent model via `setConnection()`:
 
-```php
+```
 $model = new Setting();
 $model->setConnection('tenant_abc');
 ```
 
 This allows each tenant to have its own database while using the same codebase.
 
----
+* * *
 
 ## Cache Integration
 
@@ -651,7 +685,7 @@ The package implements a **cache-first** resolution strategy through `SettingsRe
 
 Cache context is independent from settings context. It controls how cache keys are isolated:
 
-```php
+```
 use SchoolPalm\AppSettings\Support\SettingsScope;
 
 // Explicit cache context for cache isolation
@@ -664,7 +698,7 @@ $scope = new SettingsScope(
 
 ### Configuring Cache
 
-```php
+```
 // config/app-settings.php
 'cache' => [
     'enabled' => env('APP_SETTINGS_CACHE', true),
@@ -691,7 +725,7 @@ CacheStore::remember('school.name', TTL, function() {
 });
 ```
 
----
+* * *
 
 ## Bulk Operations
 
@@ -699,7 +733,7 @@ CacheStore::remember('school.name', TTL, function() {
 
 The `SettingsBuilder` provides `putMany()` for batch operations:
 
-```php
+```
 use SchoolPalm\AppSettings\Facades\AppSettings;
 
 AppSettings::context('school', 1)
@@ -714,7 +748,7 @@ AppSettings::context('school', 1)
 
 This is equivalent to calling `put()` for each key-value pair individually.
 
----
+* * *
 
 ## Setting Value Types
 
@@ -722,29 +756,29 @@ The package supports all common PHP types through JSON serialization:
 
 | Type      | Supported | Stored As    |
 | --------- | --------- | ------------ |
-| `string`  | ✅         | JSON string  |
-| `integer` | ✅         | JSON number  |
-| `float`   | ✅         | JSON number  |
-| `boolean` | ✅         | JSON boolean |
-| `array`   | ✅         | JSON array   |
-| `object`  | ✅         | JSON object  |
-| `null`    | ✅         | JSON null    |
+| `string`  | ✓         | JSON string  |
+| `integer` | ✓         | JSON number  |
+| `float`   | ✓         | JSON number  |
+| `boolean` | ✓         | JSON boolean |
+| `array`   | ✓         | JSON array   |
+| `object`  | ✓         | JSON object  |
+| `null`    | ✓         | JSON null    |
 
 ### Examples
 
-```php
+```
 AppSettings::put('name', 'Emma High');           // string
-AppSettings::put('count', 150);                   // integer
-AppSettings::put('score', 95.5);                  // float
-AppSettings::put('active', true);                 // boolean
+AppSettings::put('count', 150);                  // integer
+AppSettings::put('score', 95.5);                 // float
+AppSettings::put('active', true);                // boolean
 AppSettings::put('grades', ['A', 'B', 'C']);      // array
 AppSettings::put('metadata', ['year' => 2024]);   // associative array
-AppSettings::put('theme', null);                  // null
+AppSettings::put('theme', null);                 // null
 ```
 
 Values are cast to JSON when stored and decoded when retrieved, preserving type information.
 
----
+* * *
 
 ## Exception Handling
 
@@ -756,7 +790,7 @@ The package throws `SchoolPalm\AppSettings\Exceptions\SettingsException` for var
 
 Thrown when an empty or invalid key is provided:
 
-```php
+```
 use SchoolPalm\AppSettings\Exceptions\SettingsException;
 
 try {
@@ -771,7 +805,7 @@ try {
 
 Thrown when an unsupported value type is stored:
 
-```php
+```
 try {
     AppSettings::put('key', fopen('file.txt', 'r')); // resource
 } catch (SettingsException $e) {
@@ -784,7 +818,7 @@ try {
 
 Thrown when no `SettingsService` implementation is registered (legacy contract):
 
-```php
+```
 try {
     // Attempt to use AppSettings without a registered service
 } catch (SettingsException $e) {
@@ -795,7 +829,7 @@ try {
 
 ### Best Practices
 
-```php
+```
 use SchoolPalm\AppSettings\Facades\AppSettings;
 use SchoolPalm\AppSettings\Exceptions\SettingsException;
 
@@ -808,7 +842,7 @@ try {
 }
 ```
 
----
+* * *
 
 ## Migrations
 
@@ -835,7 +869,7 @@ The `settings` table schema:
 
 ### Publishing Migrations
 
-```bash
+```
 # Standard application
 php artisan vendor:publish --tag=app-settings-migrations
 
@@ -846,7 +880,7 @@ php artisan vendor:publish --tag=app-settings-tenant-migrations
 php artisan migrate
 ```
 
----
+* * *
 
 ## Testing
 
@@ -854,7 +888,7 @@ php artisan migrate
 
 The package uses Pest PHP for testing with Orchestra Testbench.
 
-```php
+```
 // Basic CRUD test
 it('stores and retrieves a setting', function () {
     AppSettings::put('school.name', 'Emma High School');
@@ -869,6 +903,14 @@ it('returns default value when setting does not exist', function () {
         ->toBe('Excellence');
 });
 
+// Dot-notation shorthand path test
+it('retrieves dot-notation path using settings()', function () {
+    AppSettings::group('message_delivery.email.laravel-mail')->put('enabled', true);
+
+    expect(AppSettings::settings('message_delivery.email.laravel-mail.enabled'))
+        ->toBeTrue();
+});
+
 // Existence check test
 it('checks if a setting exists', function () {
     AppSettings::put('timezone', 'Africa/Kampala');
@@ -879,7 +921,7 @@ it('checks if a setting exists', function () {
 
 ### Context Isolation Tests
 
-```php
+```
 it('isolates settings by context', function () {
     AppSettings::context('school', 1)->put('name', 'School One');
     AppSettings::context('school', 2)->put('name', 'School Two');
@@ -891,7 +933,7 @@ it('isolates settings by context', function () {
 
 ### Group Tests
 
-```php
+```
 it('stores settings inside a group', function () {
     AppSettings::group('report_cards')->put('show_photo', true);
 
@@ -902,11 +944,11 @@ it('stores settings inside a group', function () {
 
 ### Running Tests
 
-```bash
+```
 composer test
 ```
 
----
+* * *
 
 ## Complete API Reference
 
@@ -914,67 +956,73 @@ composer test
 
 The facade proxies all calls to `SettingsManager`.
 
-| Method                                                        | Description                            | Returns                    |
-| ------------------------------------------------------------- | -------------------------------------- | -------------------------- |
-| `get(string $key, mixed $default = null)`                     | Retrieve a setting value               | `mixed`                    |
-| `put(string $key, mixed $value)`                              | Store a setting value                  | `SettingsManager` (fluent) |
-| `has(string $key)`                                            | Check if a setting exists              | `bool`                     |
-| `forget(string $key)`                                         | Delete a setting                       | `SettingsManager` (fluent) |
-| `all()`                                                       | Retrieve all settings in current scope | `array`                    |
-| `flush()`                                                     | Delete all settings in current scope   | `SettingsManager` (fluent) |
-| `connection(?string $connection)`                             | Set database connection                | `SettingsBuilder`          |
-| `context(string $type, string\|int\|null $identifier = null)` | Set settings context                   | `SettingsBuilder`          |
-| `group(string $group)`                                        | Set settings group                     | `SettingsBuilder`          |
-| `withScope(SettingsScope $scope)`                             | Create builder from existing scope     | `SettingsBuilder`          |
+| Method                                                  | Description                                                | Returns                    |
+| ------------------------------------------------------- | ---------------------------------------------------------- | -------------------------- |
+| `get(string $key, mixed $default = null)`               | Retrieve a setting value                                   | `mixed`                    |
+| `settings(?string $path = null, mixed $default = null)` | Retrieve a setting value or path directly via dot-notation | `mixed`                    |
+| `setting(?string $path = null, mixed $default = null)`  | Alias for `settings()`                                     | `mixed`                    |
+| `put(string $key, mixed $value)`                        | Store a setting value                                      | `SettingsManager` (fluent) |
+| `has(string $key)`                                      | Check if a setting exists                                  | `bool`                     |
+| `forget(string $key)`                                   | Delete a setting                                           | `SettingsManager` (fluent) |
+| `all()`                                                 | Retrieve all settings in current scope                     | `array`                    |
+| `flush()`                                               | Delete all settings in current scope                       | `SettingsManager` (fluent) |
+| `connection(?string $connection)`                       | Set database connection                                    | `SettingsBuilder`          |
+| `context(string $type, string                           | int                                                        | null $identifier = null)`  | Set settings context | `SettingsBuilder` |
+| `group(string $group)`                                  | Set settings group                                         | `SettingsBuilder`          |
+| `withScope(SettingsScope $scope)`                       | Create builder from existing scope                         | `SettingsBuilder`          |
 
 ### `SettingsManager` Methods
 
-| Method                                                 | Description               | Returns           |
-| ------------------------------------------------------ | ------------------------- | ----------------- |
-| `put(string $key, mixed $value)`                       | Store setting             | `static`          |
-| `get(string $key, mixed $default = null)`              | Retrieve setting          | `mixed`           |
-| `has(string $key)`                                     | Check existence           | `bool`            |
-| `forget(string $key)`                                  | Delete setting            | `static`          |
-| `all()`                                                | Retrieve all settings     | `array`           |
-| `flush()`                                              | Delete all settings       | `static`          |
-| `connection(?string $connection)`                      | Set connection            | `SettingsBuilder` |
-| `context(string $type, string\|int\|null $identifier)` | Set context               | `SettingsBuilder` |
-| `group(string $group)`                                 | Set group                 | `SettingsBuilder` |
-| `withScope(SettingsScope $scope)`                      | Create builder from scope | `SettingsBuilder` |
+| Method                                                  | Description                    | Returns            |
+| ------------------------------------------------------- | ------------------------------ | ------------------ |
+| `put(string $key, mixed $value)`                        | Store setting                  | `static`           |
+| `get(string $key, mixed $default = null)`               | Retrieve setting               | `mixed`            |
+| `settings(?string $path = null, mixed $default = null)` | Retrieve setting/path directly | `mixed`            |
+| `setting(?string $path = null, mixed $default = null)`  | Alias for `settings()`         | `mixed`            |
+| `has(string $key)`                                      | Check existence                | `bool`             |
+| `forget(string $key)`                                   | Delete setting                 | `static`           |
+| `all()`                                                 | Retrieve all settings          | `array`            |
+| `flush()`                                               | Delete all settings            | `static`           |
+| `connection(?string $connection)`                       | Set connection                 | `SettingsBuilder`  |
+| `context(string $type, string                           | int                            | null $identifier)` | Set context | `SettingsBuilder` |
+| `group(string $group)`                                  | Set group                      | `SettingsBuilder`  |
+| `withScope(SettingsScope $scope)`                       | Create builder from scope      | `SettingsBuilder`  |
 
 ### `SettingsBuilder` Methods
 
-| Method                                                 | Description               | Returns         |
-| ------------------------------------------------------ | ------------------------- | --------------- |
-| `connection(?string $connection)`                      | Set database connection   | `static`        |
-| `context(string $type, string\|int\|null $identifier)` | Set context               | `static`        |
-| `group(?string $group)`                                | Set group                 | `static`        |
-| `get(string $key, mixed $default = null)`              | Retrieve setting          | `mixed`         |
-| `put(string $key, mixed $value)`                       | Store setting             | `static`        |
-| `putMany(array $settings)`                             | Store multiple settings   | `static`        |
-| `has(string $key)`                                     | Check existence           | `bool`          |
-| `forget(string $key)`                                  | Delete setting            | `static`        |
-| `all()`                                                | Retrieve all settings     | `array`         |
-| `flush()`                                              | Delete all settings       | `static`        |
-| `scope()`                                              | Get current SettingsScope | `SettingsScope` |
+| Method                                                  | Description                    | Returns            |
+| ------------------------------------------------------- | ------------------------------ | ------------------ |
+| `connection(?string $connection)`                       | Set database connection        | `static`           |
+| `context(string $type, string                           | int                            | null $identifier)` | Set context | `static` |
+| `group(?string $group)`                                 | Set group                      | `static`           |
+| `get(string $key, mixed $default = null)`               | Retrieve setting               | `mixed`            |
+| `settings(?string $path = null, mixed $default = null)` | Retrieve setting/path directly | `mixed`            |
+| `setting(?string $path = null, mixed $default = null)`  | Alias for `settings()`         | `mixed`            |
+| `put(string $key, mixed $value)`                        | Store setting                  | `static`           |
+| `putMany(array $settings)`                              | Store multiple settings        | `static`           |
+| `has(string $key)`                                      | Check existence                | `bool`             |
+| `forget(string $key)`                                   | Delete setting                 | `static`           |
+| `all()`                                                 | Retrieve all settings          | `array`            |
+| `flush()`                                               | Delete all settings            | `static`           |
+| `scope()`                                               | Get current SettingsScope      | `SettingsScope`    |
 
 ### `SettingsScope` Methods
 
-| Method                                             | Description                      | Returns             |
-| -------------------------------------------------- | -------------------------------- | ------------------- |
-| `__construct(...)`                                 | Create scope with all properties | `void`              |
-| `connection()`                                     | Get database connection          | `string             | null` |
-| `contextType()`                                    | Get context type                 | `string             | null` |
-| `contextId()`                                      | Get context identifier           | `string\|int\|null` |
-| `group()`                                          | Get settings group               | `string             | null` |
-| `cacheContext()`                                   | Get cache context                | `mixed`             |
-| `hasContext()`                                     | Whether scope has context        | `bool`              |
-| `hasGroup()`                                       | Whether scope has group          | `bool`              |
-| `withConnection(?string $connection)`              | Create scope with new connection | `SettingsScope`     |
-| `withContext(string $type, string\|int\|null $id)` | Create scope with new context    | `SettingsScope`     |
-| `withGroup(?string $group)`                        | Create scope with new group      | `SettingsScope`     |
-| `withCacheContext(mixed $context)`                 | Create scope with cache context  | `SettingsScope`     |
-| `toArray()`                                        | Convert scope to array           | `array`             |
+| Method                                | Description                      | Returns         |
+| ------------------------------------- | -------------------------------- | --------------- |
+| `__construct(...)`                    | Create scope with all properties | `void`          |
+| `connection()`                        | Get database connection          | `string         | null`                         |
+| `contextType()`                       | Get context type                 | `string         | null`                         |
+| `contextId()`                         | Get context identifier           | `string         | int                           | null`           |
+| `group()`                             | Get settings group               | `string         | null`                         |
+| `cacheContext()`                      | Get cache context                | `mixed`         |
+| `hasContext()`                        | Whether scope has context        | `bool`          |
+| `hasGroup()`                          | Whether scope has group          | `bool`          |
+| `withConnection(?string $connection)` | Create scope with new connection | `SettingsScope` |
+| `withContext(string $type, string     | int                              | null $id)`      | Create scope with new context | `SettingsScope` |
+| `withGroup(?string $group)`           | Create scope with new group      | `SettingsScope` |
+| `withCacheContext(mixed $context)`    | Create scope with cache context  | `SettingsScope` |
+| `toArray()`                           | Convert scope to array           | `array`         |
 
 ### `SettingsException` Static Factory Methods
 
@@ -984,9 +1032,20 @@ The facade proxies all calls to `SettingsManager`.
 | `unsupportedValue(mixed $value)` | Exception for unsupported types |
 | `missingService()`               | Exception for missing service   |
 
----
+* * *
 
 ## Design Philosophy
+
+**app-settings** is an abstraction layer, not a storage engine.
+
+Its only responsibility is to provide a clean, expressive, and fluent API for working with application settings while delegating persistence to a repository layer.
+
+### Core Principles
+
+1. **Simple Developer API** — Minimal, intuitive, and expressive methods
+2. **Database Independent** — Works with any database engine
+3. **Tenant Independent** — No built-in tenant assumptions
+4. **School Independent** — Flexible context system for any entity
 
 **app-settings** is an abstraction layer, not a storage engine.
 
