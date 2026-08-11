@@ -21,11 +21,6 @@ class SettingsResolver
     ) {}
 
     /**
-     * Retrieve a setting value using cache.
-     *
-     * Passing $key = null (or empty) returns the entire compiled scope value.
-     */
-    /**
      * Retrieve a setting value using cache or resolution fallback.
      */
     public function get(
@@ -72,6 +67,7 @@ class SettingsResolver
             $value
         );
 
+        $this->cache($scope)->forget($this->cacheKey($scope, $key));
         $this->invalidateGroupHierarchyCache($scope);
     }
 
@@ -87,6 +83,7 @@ class SettingsResolver
             $key
         );
 
+        $this->cache($scope)->forget($this->cacheKey($scope, $key));
         $this->invalidateGroupHierarchyCache($scope);
     }
 
@@ -125,17 +122,18 @@ class SettingsResolver
         SettingsScope $scope
     ): void {
         $this->repository->flush($scope);
-        $this->invalidateGroupHierarchyCache($scope);
+
+        $cache = $this->cache($scope);
+
+        if (method_exists($cache, 'flush')) {
+            $cache->flush();
+        } else {
+            $this->invalidateGroupHierarchyCache($scope);
+        }
     }
 
     /**
      * Bubble up and invalidate all parent group caches when a sub-group changes.
-     *
-     * Example: Writing or deleting in 'message_delivery.email.laravel-mail' invalidates:
-     * - group_all:message_delivery.email.laravel-mail
-     * - group_all:message_delivery.email
-     * - group_all:message_delivery
-     * - group_all:root
      */
     protected function invalidateGroupHierarchyCache(SettingsScope $scope): void
     {
@@ -185,15 +183,6 @@ class SettingsResolver
 
     /**
      * Build a group-aware cache key.
-     *
-     * The cache-store key builder only incorporates tenant and
-     * school contexts. To prevent group bleed within the same
-     * context, the group is prefixed onto the base key.
-     *
-     * Example:
-     *
-     * email:provider
-     * sms:provider
      */
     protected function cacheKey(
         SettingsScope $scope,

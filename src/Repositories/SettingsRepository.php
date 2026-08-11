@@ -16,15 +16,6 @@ use SchoolPalm\AppSettings\Support\SettingsScope;
  */
 class SettingsRepository
 {
-    /**
-     * Retrieve a setting value.
-     */
-    /**
-     * Retrieve a setting value or entire scoped branch.
-     */
-    /**
-     * Retrieve a setting value or entire scoped branch.
-     */
     public function get(
         SettingsScope $scope,
         ?string $key = null,
@@ -37,8 +28,6 @@ class SettingsRepository
                 return $all;
             }
 
-            // Fallback: If scope group target is a leaf key in a parent group
-            // Example: group('message_delivery.email.laravel-mail.enabled')
             $group = $scope->group();
 
             if ($group !== null && str_contains($group, '.')) {
@@ -64,12 +53,6 @@ class SettingsRepository
         return $default;
     }
 
-    /**
-     * Store a setting value.
-     *
-     * Automatically expands associative array payloads into dot-notation database keys.
-     * Exact group write (e.g. 'message_delivery.in_app')
-     */
     public function put(
         SettingsScope $scope,
         string $key,
@@ -86,9 +69,6 @@ class SettingsRepository
         $this->putSingleKey($scope, $key, $value);
     }
 
-    /**
-     * Store a single key-value record in database.
-     */
     protected function putSingleKey(
         SettingsScope $scope,
         string $key,
@@ -117,11 +97,6 @@ class SettingsRepository
             );
     }
 
-    /**
-     * Determine whether a setting exists.
-     *
-     * Checks both exact database key rows and sub-group array structures.
-     */
     public function has(
         SettingsScope $scope,
         string $key
@@ -137,11 +112,6 @@ class SettingsRepository
         return Arr::has($this->all($scope), $key);
     }
 
-    /**
-     * Remove a setting or setting branch.
-     *
-     * Deletes exact key matches as well as any prefixed sub-group paths.
-     */
     public function forget(
         SettingsScope $scope,
         string $key
@@ -151,27 +121,19 @@ class SettingsRepository
             ->where('key', $key)
             ->delete();
 
-        // 2. Delete any sub-keys if key was a dot-notation parent path (e.g. 'laravel-mail.driver')
+        // 2. Delete sub-keys if key was a dot-notation parent path
         $this->exactQuery($scope)
             ->where('key', 'LIKE', $key . '.%')
             ->delete();
     }
 
-    /**
-     * Remove all settings in current scope.
-     */
     public function flush(
         SettingsScope $scope
     ): void {
-        $this->query($scope)
+        $this->query($scope, includeAllGroups: true)
             ->delete();
     }
 
-    /**
-     * Retrieve all settings in current scope.
-     *
-     * @return array<string,mixed>
-     */
     public function all(
         SettingsScope $scope
     ): array {
@@ -179,24 +141,20 @@ class SettingsRepository
             return $this->group($scope);
         }
 
-        $records = $this->query($scope)->get();
+        $records = $this->query($scope, includeAllGroups: true)->get();
         $results = [];
 
         foreach ($records as $setting) {
-            Arr::set($results, $setting->key, $setting->value);
+            $path = $setting->group
+                ? "{$setting->group}.{$setting->key}"
+                : $setting->key;
+
+            Arr::set($results, $path, $setting->value);
         }
 
         return $results;
     }
 
-    /**
-     * Retrieve settings belonging to the current group or sub-groups as a nested array.
-     *
-     * Expands dot-notation key paths into multidimensional associative arrays
-     * matching standard Laravel config() behavior.
-     *
-     * @return array<string,mixed>
-     */
     public function group(
         SettingsScope $scope
     ): array {
@@ -211,10 +169,8 @@ class SettingsRepository
 
         foreach ($records as $setting) {
             if ($setting->group === $targetGroup) {
-                // Direct key on target group - use Arr::set to expand dot keys (e.g. 'retry.limit')
                 Arr::set($results, $setting->key, $setting->value);
             } else {
-                // Sub-group: strip parent group prefix to obtain relative path
                 $relativeGroup = ltrim(substr($setting->group, strlen($targetGroup)), '.');
                 $fullPath = "{$relativeGroup}.{$setting->key}";
 
@@ -225,15 +181,9 @@ class SettingsRepository
         return $results;
     }
 
-    /**
-     * Create scoped settings query with support for hierarchical group matching.
-     *
-     * If scope group is 'message_delivery.in_app', this queries:
-     * - group = 'message_delivery.in_app'
-     * - group LIKE 'message_delivery.in_app.%'
-     */
     protected function query(
-        SettingsScope $scope
+        SettingsScope $scope,
+        bool $includeAllGroups = false
     ): Builder {
         $model = new Setting();
 
@@ -258,16 +208,13 @@ class SettingsRepository
                 $q->where('group', $group)
                     ->orWhere('group', 'LIKE', $group . '.%');
             });
-        } else {
+        } elseif (! $includeAllGroups) {
             $query->whereNull('group');
         }
 
         return $query;
     }
 
-    /**
-     * Create exact scoped settings query for write/update operations.
-     */
     protected function exactQuery(
         SettingsScope $scope
     ): Builder {
