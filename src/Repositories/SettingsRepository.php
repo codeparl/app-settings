@@ -67,9 +67,29 @@ class SettingsRepository
     /**
      * Store a setting value.
      *
+     * Automatically expands associative array payloads into dot-notation database keys.
      * Exact group write (e.g. 'message_delivery.in_app')
      */
     public function put(
+        SettingsScope $scope,
+        string $key,
+        mixed $value
+    ): void {
+        if (is_array($value) && Arr::isAssoc($value)) {
+            foreach (Arr::dot($value, $key . '.') as $dotKey => $dotValue) {
+                $this->putSingleKey($scope, $dotKey, $dotValue);
+            }
+
+            return;
+        }
+
+        $this->putSingleKey($scope, $key, $value);
+    }
+
+    /**
+     * Store a single key-value record in database.
+     */
+    protected function putSingleKey(
         SettingsScope $scope,
         string $key,
         mixed $value
@@ -99,29 +119,43 @@ class SettingsRepository
 
     /**
      * Determine whether a setting exists.
+     *
+     * Checks both exact database key rows and sub-group array structures.
      */
     public function has(
         SettingsScope $scope,
         string $key
     ): bool {
-        return $this->query($scope)
+        $existsExact = $this->exactQuery($scope)
             ->where('key', $key)
             ->exists();
+
+        if ($existsExact) {
+            return true;
+        }
+
+        return Arr::has($this->all($scope), $key);
     }
 
     /**
-     * Remove a setting.
+     * Remove a setting or setting branch.
+     *
+     * Deletes exact key matches as well as any prefixed sub-group paths.
      */
     public function forget(
         SettingsScope $scope,
         string $key
     ): void {
-        $this->query($scope)
+        // 1. Delete exact key match
+        $this->exactQuery($scope)
             ->where('key', $key)
             ->delete();
+
+        // 2. Delete any sub-keys if key was a dot-notation parent path (e.g. 'laravel-mail.driver')
+        $this->exactQuery($scope)
+            ->where('key', 'LIKE', $key . '.%')
+            ->delete();
     }
-
-
 
     /**
      * Remove all settings in current scope.
@@ -190,6 +224,7 @@ class SettingsRepository
 
         return $results;
     }
+
     /**
      * Create scoped settings query with support for hierarchical group matching.
      *

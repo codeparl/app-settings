@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\DB;
 use SchoolPalm\AppSettings\Facades\AppSettings;
 
 it('stores settings inside a group', function () {
