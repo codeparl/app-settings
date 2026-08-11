@@ -31,21 +31,33 @@ class SettingsResolver
 
     /**
      * Retrieve a setting value using cache.
+     *
+     * Passing $key = null (or empty) returns the entire compiled scope value.
+     */
+    /**
+     * Retrieve a setting value using cache or resolution fallback.
      */
     public function get(
         SettingsScope $scope,
-        string $key,
+        ?string $key = null,
         mixed $default = null
     ): mixed {
+        if ($key === null || $key === '') {
+            $all = $this->all($scope);
+
+            if (!empty($all)) {
+                return $all;
+            }
+
+            // Fall back to repository to attempt resolving trailing leaf segment as a key
+            return $this->repository->get($scope, null, $default);
+        }
+
         return $this->cache($scope)
             ->remember(
                 $this->cacheKey($scope, $key),
                 config('app-settings.cache.ttl'),
-                function () use (
-                    $scope,
-                    $key,
-                    $default
-                ) {
+                function () use ($scope, $key, $default) {
                     return $this->repository->get(
                         $scope,
                         $key,

@@ -19,20 +19,49 @@ class SettingsRepository
     /**
      * Retrieve a setting value.
      */
+    /**
+     * Retrieve a setting value or entire scoped branch.
+     */
+    /**
+     * Retrieve a setting value or entire scoped branch.
+     */
     public function get(
         SettingsScope $scope,
-        string $key,
+        ?string $key = null,
         mixed $default = null
     ): mixed {
-        $setting = $this->query($scope)
-            ->where('key', $key)
-            ->first();
+        if ($key === null || $key === '') {
+            $all = $this->all($scope);
 
-        if (!$setting) {
+            if (!empty($all)) {
+                return $all;
+            }
+
+            // Fallback: If scope group target is a leaf key in a parent group
+            // Example: group('message_delivery.email.laravel-mail.enabled')
+            $group = $scope->group();
+
+            if ($group !== null && str_contains($group, '.')) {
+                $lastDot = strrpos($group, '.');
+                $parentGroup = substr($group, 0, $lastDot);
+                $leafKey = substr($group, $lastDot + 1);
+
+                $parentScope = clone $scope;
+                $parentScope->setGroup($parentGroup);
+
+                return $this->get($parentScope, $leafKey, $default);
+            }
+
             return $default;
         }
 
-        return $setting->value;
+        $all = $this->all($scope);
+
+        if (Arr::has($all, $key)) {
+            return Arr::get($all, $key);
+        }
+
+        return $default;
     }
 
     /**

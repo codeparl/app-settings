@@ -129,8 +129,16 @@ class SettingsBuilder
      *
      * @return mixed
      */
+    /**
+     * Retrieve a setting value or the entire group scope.
+     *
+     * @param string|null $key
+     * @param mixed $default
+     *
+     * @return mixed
+     */
     public function get(
-        string $key,
+        ?string $key = null,
         mixed $default = null
     ): mixed {
         return $this->resolver->get(

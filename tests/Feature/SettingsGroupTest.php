@@ -55,3 +55,15 @@ it('maintains relative scoping when fetching sub-groups directly', function () {
         ],
     ]);
 });
+
+it('allows parameterless get() calls on group scopes', function () {
+    AppSettings::group('message_delivery.email.laravel-mail')->put('enabled', true);
+
+    // Retrieve entire array via group scope
+    $allInGroup = AppSettings::group('message_delivery.email.laravel-mail')->get();
+    expect($allInGroup)->toBe(['enabled' => true]);
+
+    // Retrieve scalar directly via group scope
+    $value = AppSettings::group('message_delivery.email.laravel-mail.enabled')->get();
+    expect($value)->toBeTrue();
+});

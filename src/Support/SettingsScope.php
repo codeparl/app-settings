@@ -298,4 +298,14 @@ final class SettingsScope
             'cacheContext' => $this->cacheContext,
         ];
     }
+
+    /**
+     * Set or mutate the group name for this scope.
+     */
+    public function setGroup(?string $group): static
+    {
+        $this->group = $group;
+
+        return $this;
+    }
 }
