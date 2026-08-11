@@ -3,7 +3,7 @@
     "description": "A Laravel settings management package providing multi-tenant and context-aware configuration storage using CacheStore.",
     "type": "library",
     "license": "MIT",
-    "version": "2.0.2",
+    "version": "2.0.3",
     "keywords": [
         "laravel",
         "settings",

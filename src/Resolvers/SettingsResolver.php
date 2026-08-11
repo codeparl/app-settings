@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SchoolPalm\AppSettings\Resolvers;
 
+use Illuminate\Support\Arr;
 use SchoolPalm\AppSettings\Repositories\SettingsRepository;
 use SchoolPalm\AppSettings\Support\SettingsScope;
 use SchoolPalm\CacheStore\Facades\CacheStore;
@@ -11,17 +12,7 @@ use SchoolPalm\CacheStore\Facades\CacheStore;
 /**
  * Class SettingsResolver
  *
- * Resolves settings using a cache-first strategy.
- *
- * Cache isolation and key resolution are delegated
- * to cache-store.
- *
- * This resolver does not know about:
- *
- * - tenants
- * - schools
- * - cache namespaces
- * - cache key generation
+ * Resolves settings using a cache-first strategy driven by unified group cache invalidation.
  */
 class SettingsResolver
 {
@@ -30,33 +21,31 @@ class SettingsResolver
     ) {}
 
     /**
-     * Retrieve a setting value using cache.
+     * Retrieve a setting value using group-level cached data.
+     *
+     * Routes resolution through all() to ensure sub-branch arrays and dot keys
+     * read from a single, invalidated source of truth without cache drift.
+     */
+    /**
+     * Retrieve a setting value using group-level cached data with repository fallback.
      */
     public function get(
         SettingsScope $scope,
         string $key,
         mixed $default = null
     ): mixed {
-        return $this->cache($scope)
-            ->remember(
-                $this->cacheKey($scope, $key),
-                config('app-settings.cache.ttl'),
-                function () use (
-                    $scope,
-                    $key,
-                    $default
-                ) {
-                    return $this->repository->get(
-                        $scope,
-                        $key,
-                        $default
-                    );
-                }
-            );
+        $all = $this->all($scope);
+
+        if (Arr::has($all, $key)) {
+            return Arr::get($all, $key);
+        }
+
+        // Fallback to repository lookup if not found in group cache
+        return $this->repository->get($scope, $key, $default);
     }
 
     /**
-     * Store a setting value in database and update cache.
+     * Store a setting value in database and update group hierarchy cache.
      */
     public function put(
         SettingsScope $scope,
@@ -69,18 +58,11 @@ class SettingsResolver
             $value
         );
 
-        $this->cache($scope)
-            ->put(
-                $this->cacheKey($scope, $key),
-                $value,
-                config('app-settings.cache.ttl')
-            );
-
-        $this->invalidateGroupCache($scope);
+        $this->invalidateGroupHierarchyCache($scope);
     }
 
     /**
-     * Remove a setting from database and cache.
+     * Remove a setting or sub-branch from database and update group hierarchy cache.
      */
     public function forget(
         SettingsScope $scope,
@@ -91,29 +73,17 @@ class SettingsResolver
             $key
         );
 
-        $this->cache($scope)
-            ->forget(
-                $this->cacheKey($scope, $key)
-            );
-
-        $this->invalidateGroupCache($scope);
+        $this->invalidateGroupHierarchyCache($scope);
     }
 
     /**
-     * Determine if setting exists.
-     *
-     * Note:
-     * This checks storage only.
-     * It does not consider defaults.
+     * Determine if setting exists in current group scope.
      */
     public function has(
         SettingsScope $scope,
         string $key
     ): bool {
-        return $this->repository->has(
-            $scope,
-            $key
-        );
+        return Arr::has($this->all($scope), $key);
     }
 
     /**
@@ -126,7 +96,7 @@ class SettingsResolver
     ): array {
         return $this->cache($scope)
             ->remember(
-                $this->groupCacheKey($scope),
+                $this->groupCacheKey($scope->group()),
                 config('app-settings.cache.ttl'),
                 function () use ($scope) {
                     return $this->repository->all($scope);
@@ -135,49 +105,46 @@ class SettingsResolver
     }
 
     /**
-     * Remove all settings in current scope.
-     *
-     * Clears both the database and the cache for the
-     * given scope (context and group).
+     * Remove all settings in current scope and invalidate group hierarchy cache.
      */
     public function flush(
         SettingsScope $scope
     ): void {
-        $keys = array_keys(
-            $this->repository->all($scope)
-        );
-
-        $this->repository->flush(
-            $scope
-        );
-
-        $cache = $this->cache($scope);
-
-        // Clear parent / group-level aggregated cache structure
-        $cache->forget($this->groupCacheKey($scope));
-
-        // Flush individual item caches
-        foreach ($keys as $key) {
-            $cache->forget(
-                $this->cacheKey($scope, $key)
-            );
-        }
+        $this->repository->flush($scope);
+        $this->invalidateGroupHierarchyCache($scope);
     }
 
     /**
-     * Invalidate cached group structure when writing or forgetting items.
+     * Bubble up and invalidate all parent group caches when a sub-group changes.
+     *
+     * Example: Writing or deleting in 'message_delivery.email.laravel-mail' invalidates:
+     * - group_all:message_delivery.email.laravel-mail
+     * - group_all:message_delivery.email
+     * - group_all:message_delivery
+     * - group_all:root
      */
-    protected function invalidateGroupCache(SettingsScope $scope): void
+    protected function invalidateGroupHierarchyCache(SettingsScope $scope): void
     {
-        $this->cache($scope)->forget($this->groupCacheKey($scope));
+        $cache = $this->cache($scope);
+        $group = $scope->group();
+
+        while ($group !== null && $group !== '') {
+            $cache->forget($this->groupCacheKey($group));
+
+            $lastDotPosition = strrpos($group, '.');
+            $group = $lastDotPosition !== false ? substr($group, 0, $lastDotPosition) : null;
+        }
+
+        // Always invalidate the root group cache
+        $cache->forget($this->groupCacheKey(null));
     }
 
     /**
      * Build aggregated group cache key for group array queries.
      */
-    protected function groupCacheKey(SettingsScope $scope): string
+    protected function groupCacheKey(?string $group): string
     {
-        return $scope->hasGroup() ? 'group_all:' . $scope->group() : 'group_all:root';
+        return $group !== null && $group !== '' ? 'group_all:' . $group : 'group_all:root';
     }
 
     /**
@@ -186,31 +153,12 @@ class SettingsResolver
     protected function cache(
         SettingsScope $scope
     ): mixed {
-        /**
-         * Explicit cache context provided by application.
-         *
-         * Example:
-         *
-         * tenant_abc
-         * school_123
-         */
         if ($scope->cacheContext() !== null) {
             return CacheStore::forContext(
                 ...$scope->cacheContext()
             );
         }
 
-        /**
-         * Fallback cache context.
-         *
-         * Uses settings scope only.
-         *
-         * Does not know about tenants.
-         *
-         * Example:
-         *
-         * school:10
-         */
         if ($scope->contextType() !== null) {
             return CacheStore::forContext(
                 $scope->contextType(),
@@ -218,32 +166,6 @@ class SettingsResolver
             );
         }
 
-        /**
-         * Global settings.
-         */
         return CacheStore::getFacadeRoot();
-    }
-
-    /**
-     * Build a group-aware cache key.
-     *
-     * The cache-store key builder only incorporates tenant and
-     * school contexts. To prevent group bleed within the same
-     * context, the group is prefixed onto the base key.
-     *
-     * Example:
-     *
-     * email:provider
-     * sms:provider
-     */
-    protected function cacheKey(
-        SettingsScope $scope,
-        string $key
-    ): string {
-        if ($scope->hasGroup()) {
-            return $scope->group() . ':' . $key;
-        }
-
-        return $key;
     }
 }
